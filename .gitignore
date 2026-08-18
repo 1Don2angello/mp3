@@ -1,0 +1,70 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Build / packaging output
+build/
+dist/
+*.spec
+*.zip
+*.exe
+
+# Downloaded playlists / copyrighted or personal media
+downloads/
+download/
+music/
+musica/
+songs/
+canciones/
+*.mp3
+*.m4a
+*.aac
+*.flac
+*.wav
+*.ogg
+*.opus
+*.wma
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.webm
+*.part
+*.ytdl
+*.temp
+*.tmp
+
+# Local logs and diagnostics
+logs/
+debug_hikvision/
+debug_*.html
+debug_*.png
+debug_*.txt
+quick_debug*.png
+quick_debug*.txt
+
+# Generated reports / local spreadsheets
+*.xlsx
+*.xls
+*.csv
+!input/.gitkeep
+
+# Local input files with client data
+input/
+
+# Local config / secrets
+.env
+*.env
+config.json
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
