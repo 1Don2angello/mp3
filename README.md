@@ -3,13 +3,13 @@
 ## Estructura del proyecto
 
 ```text
-motor/   Logica de metadatos y descargas, compartida por ambas interfaces
-pc/      Interfaz Tkinter, scripts de Windows y compilacion del EXE
+motor/   Logica de metadatos, descargas y sesiones de audio online
+pc/      Interfaz Tkinter, salida de sonido con FFplay y compilacion del EXE
 movil/   Interfaz Kivy y configuracion para generar el APK de Android
 main.py  Entrada minima que Buildozer requiere en la raiz
 ```
 
-PC y Android ejecutan el mismo modulo `motor.download_playlist`. Cada interfaz guarda sus descargas en el dispositivo donde se ejecuta.
+PC y Android ejecutan el mismo modulo `motor.download_playlist`. `motor.audio` coordina la reproduccion online; cada plataforma aporta su salida de sonido. Cada interfaz guarda sus descargas en el dispositivo donde se ejecuta.
 
 Spotisaver es una herramienta independiente para leer metadatos de playlists, albumes y canciones, y crear respaldos MP3/MP4 para uso personal cuando exista una fuente publica compatible.
 
@@ -52,6 +52,8 @@ Con interfaz:
 ```
 
 Pega la URL, presiona **Cargar lista** para revisar nombres sin descargar, elige `MP3` o `MP4`, y presiona **Descargar**.
+En PC, **Escuchar 20 s** reproduce una muestra del enlace actual sin guardar el archivo. Si el enlace es una playlist, escucha su primer elemento; **Detener** corta la muestra. Esta funcion requiere `ffplay` junto a `ffmpeg`.
+La etiqueta de la vista previa indica si cargaste una playlist, un enlace individual o una coincidencia sugerida. **Limpiar** borra el enlace, la portada, la vista previa y el registro de actividad para empezar con otra seleccion.
 Si pegas un enlace de Spotify, la app intenta leer titulo/miniatura y preparar una coincidencia publica en YouTube para que la revises antes de descargar.
 En `MP4` puedes elegir calidad maxima: `best`, `2160`, `1440`, `1080`, `720`, `480` o `360`.
 
@@ -107,6 +109,11 @@ El EXE no incluye tus descargas. La carpeta `downloads/` esta ignorada por Git y
 ## Android (APK)
 
 La app Android esta en `movil/main.py` y usa el motor compartido. Incluye carga de listas, revision de coincidencias para enlaces de Spotify y descarga MP3/MP4 al almacenamiento privado de la app. La configuracion de compilacion esta en `movil/buildozer.spec` e incluye la receta Android de FFmpeg con codificador MP3.
+
+La propuesta visual de la futura radio esta en `movil/mockups/index.html`. Abrela en un navegador para ver cuatro pantallas en blanco y negro: inicio, reproductor, cola y biblioteca. Es una maqueta estatica; todavia no esta conectada al APK.
+Las frases propuestas para el locutor TTS estan guardadas en `docs/frases-locutor-radio.md` para adaptarlas cuando se implemente la voz.
+
+Hay un APK independiente para probar primero el locutor TTS en `movil/tts-prueba/dist/Spotisaver-Voz-Prueba.apk`. Su codigo y las instrucciones para reconstruirlo estan en `movil/tts-prueba/README.md`. Esta prueba de voz no incluye aun la radio ni el descargador movil.
 
 Para generar el APK se necesita Linux o WSL2. En Windows, [Buildozer recomienda compilar desde el sistema de archivos de WSL](https://buildozer.readthedocs.io/en/latest/installation/). Copia el proyecto a WSL y ejecuta desde alli:
 

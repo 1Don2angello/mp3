@@ -26,15 +26,19 @@ if str(SOURCE_ROOT) not in sys.path:
 
 from motor.download_playlist import (
     find_ffmpeg,
+    find_ffplay,
     get_playlist_details,
     get_playlist_table,
     get_spotify_api_details,
     get_spotify_oembed,
     is_spotify_url,
     search_youtube_matches,
+    spotify_resource_from_url,
     spotify_credentials_available,
     main as download_main,
 )
+from motor.audio import OnlineAudioEngine
+from pc.ffplay_backend import FFplayBackend
 
 
 PROJECT_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else SOURCE_ROOT
@@ -59,9 +63,11 @@ class PlaylistDownloaderApp:
         self.status = StringVar(value="Listo")
         self.playlist_title = StringVar(value="Sin playlist cargada")
         self.playlist_summary = StringVar(value="Pega una URL y carga la lista para revisar contenido.")
+        self.source_type = StringVar(value="Sin enlace cargado")
         self.theme_mode = StringVar(value="light")
         self.show_advanced = False
         self.process: subprocess.Popen[str] | None = None
+        self.audio_engine: OnlineAudioEngine | None = None
         self.messages: queue.Queue[object] = queue.Queue()
         self.thumbnail_image: ImageTk.PhotoImage | None = None
         self.cover_label: tk.Label | None = None
@@ -73,6 +79,7 @@ class PlaylistDownloaderApp:
         self._build_ui()
         self._sync_quality_controls()
         self._check_ffmpeg()
+        self.root.protocol("WM_DELETE_WINDOW", self._close)
         self.root.after(150, self._drain_messages)
 
     def _select_fonts(self) -> dict[str, str]:
@@ -342,7 +349,8 @@ class PlaylistDownloaderApp:
 
         self.url_entry = self._field(row, self.url)
         self.url_entry.grid(row=0, column=0, sticky="ew", padx=(0, 12), ipady=11)
-        self._button(row, "X", self._clear_url, bg=self.colors["secondary"]).grid(row=0, column=1, padx=(0, 12))
+        self.clear_button = self._button(row, "Limpiar", self._clear_url, bg=self.colors["secondary"])
+        self.clear_button.grid(row=0, column=1, padx=(0, 12))
         self.preview_button = self._button(row, "CARGAR", self._start_preview, bg=self.colors["button"])
         self.preview_button.grid(row=0, column=2, padx=(0, 12))
         self.txt_button = self._button(row, "CARGAR TXT", self._choose_txt, bg=self.colors["secondary"])
@@ -368,6 +376,15 @@ class PlaylistDownloaderApp:
         info.grid(row=0, column=1, sticky="nsew", padx=(0, 18), pady=20)
         info.columnconfigure(0, weight=1)
 
+        tk.Label(
+            info,
+            textvariable=self.source_type,
+            fg=self.colors["accent_dark"],
+            bg=self.colors["card"],
+            font=self._font("ui", 10, "bold"),
+            anchor="w",
+        ).grid(row=0, column=0, sticky="ew", pady=(0, 5))
+
         title_label = tk.Label(
             info,
             textvariable=self.playlist_title,
@@ -378,7 +395,7 @@ class PlaylistDownloaderApp:
             justify="left",
             wraplength=620,
         )
-        title_label.grid(row=0, column=0, sticky="ew")
+        title_label.grid(row=1, column=0, sticky="ew")
         tk.Label(
             info,
             textvariable=self.playlist_summary,
@@ -387,7 +404,7 @@ class PlaylistDownloaderApp:
             font=self._font("ui", 10, "bold"),
             wraplength=560,
             justify="left",
-        ).grid(row=1, column=0, sticky="w", pady=(4, 8))
+        ).grid(row=2, column=0, sticky="w", pady=(4, 8))
 
         warning = tk.Label(
             info,
@@ -398,7 +415,7 @@ class PlaylistDownloaderApp:
             padx=12,
             pady=5,
         )
-        warning.grid(row=2, column=0, sticky="w", pady=(0, 10))
+        warning.grid(row=3, column=0, sticky="w", pady=(0, 10))
 
     def _build_controls_card(self) -> None:
         card = self._card(self.shell, row=4, pady=(0, 14))
@@ -471,15 +488,17 @@ class PlaylistDownloaderApp:
         actions = tk.Frame(card, bg=self.colors["card"])
         actions.grid(row=1, column=0, sticky="ew", padx=18, pady=(6, 20))
         actions.columnconfigure(0, weight=1)
+        self.listen_button = self._button(actions, "Escuchar 20 s", self._start_audio_preview, bg=self.colors["secondary"])
+        self.listen_button.grid(row=0, column=1, padx=(0, 10))
         self.download_button = self._button(actions, "Descargar", self._start_download, bg=self.colors["success"])
         self.download_button.configure(activebackground=self.colors["success_hover"])
-        self.download_button.grid(row=0, column=1, padx=(0, 10))
+        self.download_button.grid(row=0, column=2, padx=(0, 10))
         self.blocks_button = self._button(actions, "Descargar por bloques", self._start_blocks, bg=self.colors["secondary"])
-        self.blocks_button.grid(row=0, column=2, padx=(0, 10))
+        self.blocks_button.grid(row=0, column=3, padx=(0, 10))
         self.open_button = self._button(actions, "Abrir carpeta", self._open_output, bg=self.colors["secondary"])
-        self.open_button.grid(row=0, column=3, padx=(0, 10))
+        self.open_button.grid(row=0, column=4, padx=(0, 10))
         self.stop_button = self._button(actions, "Detener", self._stop_download, bg="#e5e7eb", fg="#111111")
-        self.stop_button.grid(row=0, column=4)
+        self.stop_button.grid(row=0, column=5)
 
     def _build_log_card(self) -> None:
         card = self._card(self.shell, row=5, pady=(0, 14))
@@ -533,6 +552,12 @@ class PlaylistDownloaderApp:
 
     def _clear_url(self) -> None:
         self.url.set("")
+        self.playlist_title.set("Sin playlist cargada")
+        self.playlist_summary.set("Pega una URL y carga la lista para revisar contenido.")
+        self.source_type.set("Sin enlace cargado")
+        self._set_thumbnail(None)
+        self.log.delete("1.0", END)
+        self.status.set("Listo")
 
     def _choose_output(self) -> None:
         folder = filedialog.askdirectory(initialdir=self.output.get() or str(PROJECT_ROOT))
@@ -645,6 +670,7 @@ class PlaylistDownloaderApp:
                 return
 
             title = path.stem
+            self.source_type.set("Origen: TXT · Lista de canciones")
             self.playlist_title.set(self._short_text(title))
             self.playlist_summary.set(f"{len(rows)} tracks leidos desde TXT | metadatos locales")
             self.messages.put(("thumbnail", None))
@@ -694,6 +720,47 @@ class PlaylistDownloaderApp:
         self._write("\n--- Nueva descarga ---\n")
         threading.Thread(target=self._run_command, args=(cmd,), daemon=True).start()
 
+    def _start_audio_preview(self) -> None:
+        url = self.url.get().strip()
+        if not url:
+            messagebox.showwarning("Falta URL", "Pega una URL primero.")
+            return
+        ffplay = find_ffplay()
+        if not ffplay:
+            messagebox.showwarning("Falta ffplay", "Instala ffplay junto a ffmpeg para escuchar muestras.")
+            return
+        self.audio_engine = OnlineAudioEngine(FFplayBackend(ffplay, PROJECT_ROOT))
+        self._set_busy(True, "Preparando muestra...")
+        self._write("\n--- Escuchar muestra sin descargar ---\n")
+        threading.Thread(target=self._run_audio_preview, args=(url, self.cookies.get().strip() or None,), daemon=True).start()
+
+    def _run_audio_preview(self, url: str, cookies: str | None) -> None:
+        try:
+            assert self.audio_engine is not None
+
+            def on_start(title: str) -> None:
+                self.messages.put(f"Escuchando: {title}\n")
+                self.messages.put(("status", "Reproduciendo muestra..."))
+
+            result = self.audio_engine.play(
+                url,
+                cookies=cookies,
+                duration_seconds=20,
+                on_start=on_start,
+                on_output=self.messages.put,
+            )
+            if result.stopped:
+                self.messages.put("Muestra detenida.\n")
+            elif result.exit_code == 0:
+                self.messages.put("Muestra terminada.\n")
+            else:
+                self.messages.put(f"No se pudo reproducir la muestra (codigo {result.exit_code}).\n")
+        except Exception as exc:
+            self.messages.put(f"ERROR escuchando muestra: {exc}\n")
+        finally:
+            self.audio_engine = None
+            self.messages.put(None)
+
     def _start_preview(self) -> None:
         url = self.url.get().strip()
         if not url:
@@ -705,6 +772,7 @@ class PlaylistDownloaderApp:
             return
 
         self._set_busy(True, "Cargando lista...")
+        self.source_type.set("Analizando enlace...")
         self._write("\n--- Cargando lista ---\n")
         threading.Thread(target=self._load_preview, args=(url, limit), daemon=True).start()
 
@@ -778,6 +846,9 @@ class PlaylistDownloaderApp:
         try:
             cookies = self.cookies.get().strip() or None
             if is_spotify_url(url):
+                resource = spotify_resource_from_url(url)
+                resource_label = {"track": "Canción", "album": "Álbum", "playlist": "Playlist"}.get(resource[0] if resource else "", "Enlace")
+                self.source_type.set(f"Origen: Spotify · {resource_label}")
                 if spotify_credentials_available():
                     try:
                         title, rows, thumbnail_url = get_spotify_api_details(url)
@@ -830,6 +901,7 @@ class PlaylistDownloaderApp:
 
                 best = matches[0]
                 self.url.set(best["url"])
+                self.source_type.set(f"Origen: Spotify · {resource_label} · Coincidencia sugerida")
                 if rows:
                     self.playlist_summary.set(f"{len(rows)} tracks leidos | primera coincidencia preparada")
                 else:
@@ -841,6 +913,7 @@ class PlaylistDownloaderApp:
             thumbnail_path = self._download_thumbnail(thumbnail_url)
 
             self.playlist_title.set(self._short_text(title))
+            self.source_type.set("Origen: enlace · Playlist" if rows else "Origen: enlace · Canción o video individual")
             unavailable = sum(1 for row in rows if row["status"] == "No disponible")
             repeated = sum(1 for row in rows if row["status"] == "Repetido")
             if rows:
@@ -859,6 +932,7 @@ class PlaylistDownloaderApp:
                 self.messages.put(f"No disponibles: {unavailable}\n")
                 self.messages.put(f"Repetidos: {repeated}\n")
         except Exception as exc:
+            self.source_type.set("No se pudo identificar el enlace")
             self.messages.put(f"\nERROR cargando lista: {exc}\n")
         finally:
             self.messages.put(None)
@@ -901,12 +975,17 @@ class PlaylistDownloaderApp:
             self.messages.put(None)
 
     def _stop_download(self) -> None:
+        if self.audio_engine:
+            self.audio_engine.stop()
+            self._write("\nDeteniendo muestra...\n")
         if self.process and self.process.poll() is None:
             self.process.terminate()
             self._write("\nDeteniendo descarga...\n")
 
     def _set_busy(self, busy: bool, status: str | None = None) -> None:
         state = "disabled" if busy else "normal"
+        self.clear_button.configure(state=state)
+        self.listen_button.configure(state=state)
         self.preview_button.configure(state=state)
         self.txt_button.configure(state=state)
         self.download_button.configure(state=state)
@@ -930,6 +1009,8 @@ class PlaylistDownloaderApp:
                     self._set_busy(False, "Listo")
                 elif isinstance(item, tuple) and item[0] == "thumbnail":
                     self._set_thumbnail(item[1])
+                elif isinstance(item, tuple) and item[0] == "status":
+                    self.status.set(item[1])
                 else:
                     self._write(item)
         except queue.Empty:
@@ -939,6 +1020,13 @@ class PlaylistDownloaderApp:
     def _write(self, text: str) -> None:
         self.log.insert(END, text)
         self.log.see(END)
+
+    def _close(self) -> None:
+        if self.audio_engine:
+            self.audio_engine.stop()
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+        self.root.destroy()
 
 
 def main() -> None:

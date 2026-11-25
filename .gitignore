@@ -19,6 +19,7 @@ dist/
 *.aab
 .buildozer/
 bin/
+movil/tts-prueba/.debug/
 
 # Downloaded playlists / copyrighted or personal media
 downloads/

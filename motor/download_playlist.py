@@ -414,6 +414,61 @@ def find_ffmpeg() -> str | None:
     return None
 
 
+def find_ffplay() -> str | None:
+    found = shutil.which("ffplay")
+    if found:
+        return found
+    ffmpeg = find_ffmpeg()
+    if not ffmpeg:
+        return None
+    location = Path(ffmpeg)
+    directory = location if location.is_dir() else location.parent
+    for name in ("ffplay.exe", "ffplay"):
+        candidate = directory / name
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def resolve_audio_preview(url: str, cookies: str | None = None) -> tuple[str, str, dict[str, str]]:
+    """Obtiene la URL temporal de audio sin descargar el archivo."""
+    if is_spotify_url(url):
+        raise ValueError("Carga primero el enlace de Spotify y revisa la coincidencia sugerida.")
+    options = {
+        "quiet": True,
+        "no_warnings": True,
+        "skip_download": True,
+        "format": "bestaudio/best",
+        "playlist_items": "1",
+        "noplaylist": False,
+    }
+    if cookies:
+        options["cookiefile"] = cookies
+    node_location = find_node()
+    if node_location:
+        options["js_runtimes"] = {"node": {"path": node_location}}
+
+    with yt_dlp.YoutubeDL(options) as ydl:
+        info = ydl.extract_info(url, download=False)
+        if not info:
+            raise RuntimeError("No se encontro audio para escuchar.")
+        if info.get("entries") is not None:
+            info = next((entry for entry in info["entries"] if entry), None)
+        if not info:
+            raise RuntimeError("La lista no contiene elementos disponibles.")
+        if info.get("_type") in {"url", "url_transparent"}:
+            info = ydl.extract_info(info["url"], download=False)
+        stream_url = info.get("url") if info else None
+        if not stream_url:
+            raise RuntimeError("La fuente no entrego un enlace de audio reproducible.")
+        headers = {
+            str(key): str(value)
+            for key, value in (info.get("http_headers") or {}).items()
+            if "\r" not in str(key) + str(value) and "\n" not in str(key) + str(value)
+        }
+        return str(info.get("title") or "Muestra"), str(stream_url), headers
+
+
 def find_node() -> str | None:
     return shutil.which("node")
 
