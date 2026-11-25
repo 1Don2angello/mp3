@@ -6,9 +6,9 @@ import sys
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 APP_NAME = "Spotisaver"
-ENTRYPOINT = PROJECT_ROOT / "playlist_gui.py"
+ENTRYPOINT = PROJECT_ROOT / "pc" / "playlist_gui.py"
 DIST_DIR = PROJECT_ROOT / "dist"
 BUILD_DIR = PROJECT_ROOT / "build"
 SPEC_FILE = PROJECT_ROOT / f"{APP_NAME}.spec"
@@ -48,6 +48,8 @@ def build() -> None:
         "--windowed",
         "--name",
         APP_NAME,
+        "--paths",
+        str(PROJECT_ROOT),
         "--exclude-module",
         "pytest",
         "--exclude-module",

@@ -20,7 +20,11 @@ from tkinter.scrolledtext import ScrolledText
 from PIL import Image, ImageTk
 import certifi
 
-from download_playlist import (
+SOURCE_ROOT = Path(__file__).resolve().parent.parent
+if str(SOURCE_ROOT) not in sys.path:
+    sys.path.insert(0, str(SOURCE_ROOT))
+
+from motor.download_playlist import (
     find_ffmpeg,
     get_playlist_details,
     get_playlist_table,
@@ -29,10 +33,11 @@ from download_playlist import (
     is_spotify_url,
     search_youtube_matches,
     spotify_credentials_available,
+    main as download_main,
 )
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else SOURCE_ROOT
 
 
 class PlaylistDownloaderApp:
@@ -592,9 +597,12 @@ class PlaylistDownloaderApp:
         self.cover_label.configure(image=self.thumbnail_image, text="")
 
     def _base_command(self, url: str) -> list[str]:
-        cmd = [
-            sys.executable,
-            str(PROJECT_ROOT / "download_playlist.py"),
+        cmd = [sys.executable]
+        if getattr(sys, "frozen", False):
+            cmd.append("--download")
+        else:
+            cmd.extend(["-m", "motor.download_playlist"])
+        cmd.extend([
             url,
             "--kind",
             self.kind.get(),
@@ -604,7 +612,7 @@ class PlaylistDownloaderApp:
             self.audio_quality.get(),
             "--video-quality",
             self.video_quality.get(),
-        ]
+        ])
         cookies = self.cookies.get().strip()
         if cookies:
             cmd.extend(["--cookies", cookies])
@@ -940,4 +948,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--download":
+        raise SystemExit(download_main(sys.argv[2:]))
     main()

@@ -18,8 +18,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $VenvPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+$OutputPath = if ([System.IO.Path]::IsPathRooted($Output)) { $Output } else { Join-Path $ProjectRoot $Output }
 
 if (!(Test-Path $VenvPython)) {
   python -m venv (Join-Path $ProjectRoot ".venv")
@@ -29,10 +30,9 @@ if (!(Test-Path $VenvPython)) {
 & $VenvPython -m pip install -r (Join-Path $ProjectRoot "requirements.txt")
 
 $argsList = @(
-  (Join-Path $ProjectRoot "download_playlist.py"),
-  $Url,
+  "-m", "motor.download_playlist", $Url,
   "--kind", $Kind,
-  "--output", $Output,
+  "--output", $OutputPath,
   "--audio-quality", "$AudioQuality",
   "--video-quality", "$VideoQuality"
 )
@@ -45,4 +45,9 @@ if ($Limit -gt 0) {
   $argsList += @("--limit", "$Limit")
 }
 
-& $VenvPython @argsList
+Push-Location $ProjectRoot
+try {
+  & $VenvPython @argsList
+} finally {
+  Pop-Location
+}

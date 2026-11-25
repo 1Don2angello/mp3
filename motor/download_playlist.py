@@ -21,7 +21,7 @@ from yt_dlp.utils import DownloadError
 INVALID_PATH_CHARS = r'<>:"/\|?*'
 SPOTIFY_URL_RE = re.compile(r"https?://(?:open\.spotify\.com|spotify\.link)/\S+", re.IGNORECASE)
 SPOTIFY_RESOURCE_RE = re.compile(r"open\.spotify\.com/(track|album|playlist)/([A-Za-z0-9]+)", re.IGNORECASE)
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 def clean_name(value: str, fallback: str = "playlist") -> str:
@@ -536,7 +536,7 @@ def download_direct(args: argparse.Namespace, output_dir: Path) -> int:
             raise exc
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Descarga una playlist autorizada en MP3 o MP4."
     )
@@ -583,11 +583,11 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help="Número final de la playlist para descargar.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     ffmpeg_location = find_ffmpeg()
 
     if args.kind == "mp3" and ffmpeg_location is None:
