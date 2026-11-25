@@ -9,9 +9,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 APP_NAME = "Spotisaver"
 ENTRYPOINT = PROJECT_ROOT / "pc" / "playlist_gui.py"
-DIST_DIR = PROJECT_ROOT / "dist"
-BUILD_DIR = PROJECT_ROOT / "build"
-SPEC_FILE = PROJECT_ROOT / f"{APP_NAME}.spec"
+DIST_DIR = PROJECT_ROOT / "pc" / "dist"
+BUILD_DIR = PROJECT_ROOT / "pc" / "build"
+SPEC_FILE = PROJECT_ROOT / "pc" / f"{APP_NAME}.spec"
 
 
 def run(command: list[str]) -> None:
@@ -50,6 +50,12 @@ def build() -> None:
         APP_NAME,
         "--paths",
         str(PROJECT_ROOT),
+        "--distpath",
+        str(DIST_DIR),
+        "--workpath",
+        str(BUILD_DIR),
+        "--specpath",
+        str(PROJECT_ROOT / "pc"),
         "--exclude-module",
         "pytest",
         "--exclude-module",

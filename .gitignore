@@ -12,8 +12,13 @@ env/
 build/
 dist/
 *.spec
+!movil/buildozer.spec
 *.zip
 *.exe
+*.apk
+*.aab
+.buildozer/
+bin/
 
 # Downloaded playlists / copyrighted or personal media
 downloads/

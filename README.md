@@ -1,5 +1,16 @@
 # Playlist Downloader
 
+## Estructura del proyecto
+
+```text
+motor/   Logica de metadatos y descargas, compartida por ambas interfaces
+pc/      Interfaz Tkinter, scripts de Windows y compilacion del EXE
+movil/   Interfaz Kivy y configuracion para generar el APK de Android
+main.py  Entrada minima que Buildozer requiere en la raiz
+```
+
+PC y Android ejecutan el mismo modulo `motor.download_playlist`. Cada interfaz guarda sus descargas en el dispositivo donde se ejecuta.
+
 Spotisaver es una herramienta independiente para leer metadatos de playlists, albumes y canciones, y crear respaldos MP3/MP4 para uso personal cuando exista una fuente publica compatible.
 
 Pega un enlace de playlist, album o cancion para leer metadatos, buscar coincidencias de audio en fuentes publicas independientes cuando esten disponibles, y generar archivos MP3 o MP4.
@@ -37,7 +48,7 @@ El archivo `.env` esta ignorado por Git.
 Con interfaz:
 
 ```powershell
-.\run_gui.ps1
+.\pc\run_gui.ps1
 ```
 
 Pega la URL, presiona **Cargar lista** para revisar nombres sin descargar, elige `MP3` o `MP4`, y presiona **Descargar**.
@@ -60,7 +71,7 @@ Si el nombre esta repetido, queda marcado como `Repetido` y se descarga en una c
 Desde esta carpeta:
 
 ```powershell
-.\run.ps1 "URL_DE_TU_PLAYLIST"
+.\pc\run.ps1 "URL_DE_TU_PLAYLIST"
 ```
 
 Eso descarga en MP3 por defecto.
@@ -68,13 +79,13 @@ Eso descarga en MP3 por defecto.
 Para MP4:
 
 ```powershell
-.\run.ps1 "URL_DE_TU_PLAYLIST" -Kind mp4
+.\pc\run.ps1 "URL_DE_TU_PLAYLIST" -Kind mp4
 ```
 
 Para MP4 en 1080p:
 
 ```powershell
-.\run.ps1 "URL_DE_TU_PLAYLIST" -Kind mp4 -VideoQuality 1080
+.\pc\run.ps1 "URL_DE_TU_PLAYLIST" -Kind mp4 -VideoQuality 1080
 ```
 
 ## Crear EXE
@@ -82,27 +93,40 @@ Para MP4 en 1080p:
 Desde esta carpeta:
 
 ```powershell
-.\.venv\Scripts\python.exe build_exe.py
+.\.venv\Scripts\python.exe pc\build_exe.py
 ```
 
 El ejecutable queda en:
 
 ```text
-dist\Spotisaver.exe
+pc\dist\Spotisaver.exe
 ```
 
 El EXE no incluye tus descargas. La carpeta `downloads/` esta ignorada por Git y no se empaqueta.
 
+## Android (APK)
+
+La app Android esta en `movil/main.py` y usa el motor compartido. Incluye carga de listas, revision de coincidencias para enlaces de Spotify y descarga MP3/MP4 al almacenamiento privado de la app. La configuracion de compilacion esta en `movil/buildozer.spec` e incluye la receta Android de FFmpeg con codificador MP3.
+
+Para generar el APK se necesita Linux o WSL2. En Windows, [Buildozer recomienda compilar desde el sistema de archivos de WSL](https://buildozer.readthedocs.io/en/latest/installation/). Copia el proyecto a WSL y ejecuta desde alli:
+
+```bash
+cd ~/mp3/movil
+buildozer android debug
+```
+
+El APK resultante aparecera en `movil/bin/`. Esta base movil aun necesita una prueba real en un telefono Android y una opcion para exportar las descargas fuera del almacenamiento privado de la app.
+
 Para probar solo los primeros 3:
 
 ```powershell
-.\run.ps1 "URL_DE_TU_PLAYLIST" -Kind mp3 -Limit 3
+.\pc\run.ps1 "URL_DE_TU_PLAYLIST" -Kind mp3 -Limit 3
 ```
 
 Si la playlist requiere sesion, exporta cookies en formato `cookies.txt` y pasalas asi:
 
 ```powershell
-.\run.ps1 "URL_DE_TU_PLAYLIST" -Kind mp3 -Cookies "C:\ruta\cookies.txt"
+.\pc\run.ps1 "URL_DE_TU_PLAYLIST" -Kind mp3 -Cookies "C:\ruta\cookies.txt"
 ```
 
 ## Salida
