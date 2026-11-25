@@ -1,5 +1,7 @@
 # Playlist Downloader
 
+El [resumen y progreso de Spotisaver](docs/resumen-y-progreso.md) reúne la visión de la radio, lo que ya funciona y las pruebas pendientes.
+
 ## Estructura del proyecto
 
 ```text
@@ -108,7 +110,7 @@ El EXE no incluye tus descargas. La carpeta `downloads/` esta ignorada por Git y
 
 ## Android (APK)
 
-La primera fase instalable de la radio está en [`movil/app/`](movil/app/README.md). Reproduce audio local del teléfono con las pantallas Inicio, Sonando, Cola y Biblioteca, y anuncia canciones con TTS opcional. Se compila en Windows con `./movil/app/build-apk.ps1`; el resultado es `movil/app/dist/Spotisaver-Fase-1.apk`. El [plan por fases](docs/fases-apk.md) indica lo que ya funciona y lo que falta.
+La fase 2 instalable de la radio está en [`movil/app/`](movil/app/README.md). Reproduce audio local del teléfono con las pantallas Inicio, Sonando, Cola y Biblioteca; guarda la cola, favoritas e historial; importa una carpeta completa de música (como `Music/Telegram`); abre el canal público de playlists; y anuncia canciones con TTS opcional. Se compila en Windows con `./movil/app/build-apk.ps1`; el resultado es `movil/app/dist/Spotisaver-Fase-2.apk`. El [plan por fases](docs/fases-apk.md) indica lo que ya funciona y lo que falta.
 
 El prototipo Kivy experimental está en `movil/main.py` y usa el motor compartido. Su código incluye carga de listas, revisión de coincidencias para enlaces de Spotify y descarga MP3/MP4 al almacenamiento privado de la app. Aún no se ha compilado ni probado como APK. Su configuración de Buildozer está en `movil/buildozer.spec`.
 

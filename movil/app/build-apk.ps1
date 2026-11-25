@@ -15,7 +15,7 @@ $KeyDir = Join-Path $ProjectRoot ".debug"
 $KeyFile = Join-Path $KeyDir "debug.keystore"
 $Unsigned = Join-Path $BuildDir "unsigned.apk"
 $Aligned = Join-Path $BuildDir "aligned.apk"
-$Final = Join-Path $DistDir "Spotisaver-Fase-1.apk"
+$Final = Join-Path $DistDir "Spotisaver-Fase-3.apk"
 
 New-Item -ItemType Directory -Force -Path $ClassesDir, $DexDir, $DistDir, $KeyDir | Out-Null
 
