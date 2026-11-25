@@ -20,6 +20,7 @@ dist/
 .buildozer/
 bin/
 movil/tts-prueba/.debug/
+movil/app/.debug/
 
 # Downloaded playlists / copyrighted or personal media
 downloads/

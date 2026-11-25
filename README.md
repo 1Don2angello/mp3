@@ -108,12 +108,14 @@ El EXE no incluye tus descargas. La carpeta `downloads/` esta ignorada por Git y
 
 ## Android (APK)
 
-La app Android esta en `movil/main.py` y usa el motor compartido. Incluye carga de listas, revision de coincidencias para enlaces de Spotify y descarga MP3/MP4 al almacenamiento privado de la app. La configuracion de compilacion esta en `movil/buildozer.spec` e incluye la receta Android de FFmpeg con codificador MP3.
+La primera fase instalable de la radio está en [`movil/app/`](movil/app/README.md). Reproduce audio local del teléfono con las pantallas Inicio, Sonando, Cola y Biblioteca, y anuncia canciones con TTS opcional. Se compila en Windows con `./movil/app/build-apk.ps1`; el resultado es `movil/app/dist/Spotisaver-Fase-1.apk`. El [plan por fases](docs/fases-apk.md) indica lo que ya funciona y lo que falta.
+
+El prototipo Kivy experimental está en `movil/main.py` y usa el motor compartido. Su código incluye carga de listas, revisión de coincidencias para enlaces de Spotify y descarga MP3/MP4 al almacenamiento privado de la app. Aún no se ha compilado ni probado como APK. Su configuración de Buildozer está en `movil/buildozer.spec`.
 
 La propuesta visual de la futura radio esta en `movil/mockups/index.html`. Abrela en un navegador para ver cuatro pantallas en blanco y negro: inicio, reproductor, cola y biblioteca. Es una maqueta estatica; todavia no esta conectada al APK.
 Las frases propuestas para el locutor TTS estan guardadas en `docs/frases-locutor-radio.md` para adaptarlas cuando se implemente la voz.
 
-Hay un APK independiente para probar primero el locutor TTS en `movil/tts-prueba/dist/Spotisaver-Voz-Prueba.apk`. Su codigo y las instrucciones para reconstruirlo estan en `movil/tts-prueba/README.md`. Esta prueba de voz no incluye aun la radio ni el descargador movil.
+La prueba independiente de TTS permanece en `movil/tts-prueba/dist/Spotisaver-Voz-Prueba.apk`. Su código y las instrucciones para reconstruirla están en `movil/tts-prueba/README.md`.
 
 Para generar el APK se necesita Linux o WSL2. En Windows, [Buildozer recomienda compilar desde el sistema de archivos de WSL](https://buildozer.readthedocs.io/en/latest/installation/). Copia el proyecto a WSL y ejecuta desde alli:
 
